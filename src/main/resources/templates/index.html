@@ -224,9 +224,7 @@
                                     <span th:text="${#temporals.format(article.publishedAt, 'MMM dd, yyyy')}"></span>
                                 </p>
                                 <div class="d-flex gap-2">
-                                    <a th:href="${article.url}"
-                                       target="_blank"
-                                       class="btn btn-primary btn-sm">
+                                    <a th:href="${article.url}" target="_blank" class="btn btn-primary btn-sm" th:if="${article.url}">
                                         Read Article
                                     </a>
                                     <form th:action="@{/articles/{id}/favorite(id=${article.id})}" method="post" class="d-inline">
