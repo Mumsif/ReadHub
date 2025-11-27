@@ -74,6 +74,7 @@ class ArticleService(
 
             println("✅ Successfully fetched ${newsApiResponse.articles.size} articles from NewsAPI")
 
+            // In your fetchArticlesFromNewsAPI() method:
             val newArticles = newsApiResponse.articles.map { newsArticle ->
                 Article(
                     title = newsArticle.title ?: "No Title",
@@ -81,7 +82,7 @@ class ArticleService(
                     author = newsArticle.author ?: "Unknown Author",
                     description = newsArticle.description ?: "No description",
                     source = newsArticle.source.name,
-                    url = newsArticle.url,
+                    url = newsArticle.url, // ← This is the REAL article URL
                     urlToImage = newsArticle.urlToImage,
                     publishedAt = parsePublishedAt(newsArticle.publishedAt),
                     category = "general",
