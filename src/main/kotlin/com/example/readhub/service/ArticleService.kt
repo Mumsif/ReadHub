@@ -23,45 +23,35 @@ class ArticleService(
 
     init {
         articlesCache.addAll(getDemoArticles())
-        // Load from DB on startup
-        runBlocking {
-            if (articleRepository.count() == 0L) {
-                articleRepository.saveAll(getDemoArticles())
-            }
+    }
+
+    fun getAllArticles(): List<Article> = articlesCache
+
+    fun getFavoriteArticles(): List<Article> = articlesCache.filter { it.id in favoriteArticles }
+
+    fun toggleFavorite(id: String) {
+        if (favoriteArticles.contains(id)) {
+            favoriteArticles.remove(id)
+            println("❌ Removed article $id from favorites")
+        } else {
+            favoriteArticles.add(id)
+            println("⭐ Added article $id to favorites")
         }
     }
 
-    fun getAllArticles(): List<Article> {
-        return articleRepository.findAll().sortedByDescending { it.publishedAt }
-    }
-
-    fun getFavoriteArticles(): List<Article> {
-        return articleRepository.findByIsFavoriteTrue()
-    }
-
-    fun toggleFavorite(id: String) {
-        val article = articleRepository.findById(id)
-            .orElseThrow { IllegalArgumentException("Article not found: $id") }
-
-        article.isFavorite = !article.isFavorite
-        articleRepository.save(article)
-        println("⭐ Toggled favorite for article $id: ${article.isFavorite}")
+    // ✅ ADD THIS METHOD
+    fun isApiKeyConfigured(): Boolean {
+        return apiConfig.news.key.isNotBlank() && apiConfig.news.key != "demo_key"
     }
 
     fun searchArticles(query: String): List<Article> {
-        // Always search the internet first
         return runBlocking { searchRealNews(query) }
     }
 
     suspend fun fetchArticlesFromNewsAPI(): List<Article> {
-        if (apiConfig.news.key.isBlank() || apiConfig.news.key == "demo_key") {
-            println("⚠️ NewsAPI key not set. Using demo data.")
-            return if (articleRepository.count() == 0L) {
-                val demo = getDemoArticles()
-                articleRepository.saveAll(demo).toList()
-            } else {
-                emptyList()
-            }
+        if (!isApiKeyConfigured()) {
+            println("⚠️ NewsAPI key not set. Using demo data instead.")
+            return getDemoArticles()
         }
 
         return try {
@@ -71,18 +61,13 @@ class ArticleService(
                 .uri("https://newsapi.org/v2/top-headlines?country=us&apiKey=${apiConfig.news.key}")
                 .retrieve()
                 .onStatus({ status -> status.is4xxClientError || status.is5xxServerError }) {
-                    Mono.error(RuntimeException("API Error: ${it.statusCode()}"))
+                    Mono.error(RuntimeException("NewsAPI error: ${it.statusCode()}"))
                 }
                 .bodyToMono<NewsApiResponse>()
                 .timeout(Duration.ofSeconds(10))
                 .awaitSingle()
 
-            if (newsApiResponse.status != "ok") {
-                println("❌ NewsAPI error: ${newsApiResponse.status}")
-                return emptyList()
-            }
-
-            println("✅ Fetched ${newsApiResponse.articles.size} articles from NewsAPI")
+            println("✅ Successfully fetched ${newsApiResponse.articles.size} articles from NewsAPI")
 
             val newArticles = newsApiResponse.articles.map { newsArticle ->
                 Article(
@@ -90,8 +75,8 @@ class ArticleService(
                     content = newsArticle.content ?: "No content available",
                     author = newsArticle.author ?: "Unknown Author",
                     description = newsArticle.description ?: "No description",
-                    source = newsArticle.source?.name ?: "Unknown Source",
-                    url = newsArticle.url ?: "https://newsapi.org/",
+                    source = newsArticle.source.name,
+                    url = newsArticle.url,
                     urlToImage = newsArticle.urlToImage,
                     publishedAt = parsePublishedAt(newsArticle.publishedAt),
                     category = "general",
@@ -100,7 +85,8 @@ class ArticleService(
                 )
             }
 
-            articleRepository.saveAll(newArticles).toList()
+            articlesCache.addAll(newArticles)
+            newArticles
 
         } catch (e: Exception) {
             println("❌ Error fetching from NewsAPI: ${e.message}")
@@ -110,7 +96,7 @@ class ArticleService(
     }
 
     suspend fun searchRealNews(query: String): List<Article> {
-        if (apiConfig.news.key.isBlank() || apiConfig.news.key == "demo_key") {
+        if (!isApiKeyConfigured()) {
             println("⚠️ NewsAPI key not set. Using demo search for: $query")
             return articlesCache.filter { article ->
                 article.title.contains(query, ignoreCase = true) ||
@@ -119,11 +105,11 @@ class ArticleService(
         }
 
         return try {
-            println("🔍 Searching NewsAPI for: $query")
+            println("🔍 Searching NewsAPI for: $query with key: ${apiConfig.news.key.take(5)}...")
 
             val newsApiResponse = webClient.get()
-                .uri("https://newsapi.org/v2/everything") { uriBuilder ->
-                    uriBuilder.queryParam("q", query)
+                .uri("https://newsapi.org/v2/everything") {
+                    it.queryParam("q", query)
                         .queryParam("sortBy", "publishedAt")
                         .queryParam("language", "en")
                         .queryParam("apiKey", apiConfig.news.key)
@@ -131,18 +117,18 @@ class ArticleService(
                 }
                 .retrieve()
                 .onStatus({ status -> status.is4xxClientError || status.is5xxServerError }) {
-                    Mono.error(RuntimeException("API Error: ${it.statusCode()}"))
+                    Mono.error(RuntimeException("NewsAPI error: ${it.statusCode()}"))
                 }
                 .bodyToMono<NewsApiResponse>()
                 .timeout(Duration.ofSeconds(10))
                 .awaitSingle()
 
             if (newsApiResponse.status != "ok") {
-                println("❌ NewsAPI error: ${newsApiResponse.status}")
+                println("❌ NewsAPI returned status: ${newsApiResponse.status}")
                 return emptyList()
             }
 
-            println("✅ Found ${newsApiResponse.articles.size} articles for: $query")
+            println("✅ Found ${newsApiResponse.articles.size} real articles for: $query")
 
             newsApiResponse.articles.map { newsArticle ->
                 Article(
@@ -150,7 +136,7 @@ class ArticleService(
                     content = newsArticle.content ?: "No content available",
                     author = newsArticle.author ?: "Unknown Author",
                     description = newsArticle.description ?: "No description",
-                    source = newsArticle.source?.name ?: "Unknown Source",
+                    source = newsArticle.source.name,
                     url = newsArticle.url ?: "https://newsapi.org/",
                     urlToImage = newsArticle.urlToImage,
                     publishedAt = parsePublishedAt(newsArticle.publishedAt),
@@ -163,7 +149,6 @@ class ArticleService(
         } catch (e: Exception) {
             println("❌ Error searching real news: ${e.message}")
             e.printStackTrace()
-            // Fallback to demo cache
             articlesCache.filter {
                 it.title.contains(query, ignoreCase = true)
             }
@@ -224,7 +209,6 @@ class ArticleService(
         )
     }
 
-    // API Response Classes
     data class NewsApiResponse(
         val status: String,
         val totalResults: Int,
