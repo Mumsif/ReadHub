@@ -2,51 +2,52 @@ package com.example.readhub.service
 
 import com.example.readhub.model.Magazine
 import com.example.readhub.repository.MagazineRepository
+import kotlinx.coroutines.runBlocking
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 
 @Service
-class MagazineService {
-
+class MagazineService(
+    private val magazineRepository: MagazineRepository
+) {
     private val magazinesCache = mutableListOf<Magazine>()
     private val favoriteMagazines = mutableSetOf<String>()
 
     init {
         magazinesCache.addAll(getDemoMagazines())
+        // Load from DB on startup
+        runBlocking {
+            if (magazineRepository.count() == 0L) {
+                magazineRepository.saveAll(getDemoMagazines())
+            }
+        }
     }
 
     fun getAllMagazines(): List<Magazine> {
-        return magazinesCache
+        return magazineRepository.findAll()
     }
 
     fun getFavoriteMagazines(): List<Magazine> {
-        return magazinesCache.filter { favoriteMagazines.contains(it.id) }
+        return magazineRepository.findByIsFavoriteTrue()
     }
 
     fun toggleFavorite(id: String) {
-        if (favoriteMagazines.contains(id)) {
-            favoriteMagazines.remove(id)
-            println("❌ Removed magazine $id from favorites")
-        } else {
-            favoriteMagazines.add(id)
-            println("⭐ Added magazine $id to favorites")
-        }
+        val magazine = magazineRepository.findById(id)
+            .orElseThrow { IllegalArgumentException("Magazine not found: $id") }
+
+        magazine.isFavorite = !magazine.isFavorite
+        magazineRepository.save(magazine)
+        println("⭐ Toggled favorite for magazine $id: ${magazine.isFavorite}")
     }
 
     fun searchMagazines(query: String): List<Magazine> {
-        val lowercaseQuery = query.lowercase()
-        return magazinesCache.filter { magazine ->
-            magazine.title.lowercase().contains(lowercaseQuery) ||
-                    magazine.publisher.lowercase().contains(lowercaseQuery) ||
-                    magazine.description.lowercase().contains(lowercaseQuery) ||
-                    magazine.category.lowercase().contains(lowercaseQuery)
-        }
+        if (query.isBlank()) return emptyList()
+        return magazineRepository.searchMagazines(query)
     }
 
     private fun getDemoMagazines(): List<Magazine> {
         return listOf(
             Magazine(
-                id = "1",
                 title = "Developer Weekly",
                 publisher = "Code Publications",
                 description = "Weekly magazine for software developers",
@@ -56,7 +57,6 @@ class MagazineService {
                 category = "Programming"
             ),
             Magazine(
-                id = "2",
                 title = "Tech Insights",
                 publisher = "Tech Media Group",
                 description = "Monthly technology trends and analysis",
@@ -66,7 +66,6 @@ class MagazineService {
                 category = "Technology"
             ),
             Magazine(
-                id = "3",
                 title = "AI Today",
                 publisher = "Future Publications",
                 description = "Cutting-edge artificial intelligence research",

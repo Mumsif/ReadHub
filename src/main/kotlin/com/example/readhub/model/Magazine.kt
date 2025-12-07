@@ -7,14 +7,14 @@ import java.time.LocalDateTime
 @Document(collection = "magazines")
 data class Magazine(
     @Id
-    val id: String? = null,
+    var id: String? = null,
     val title: String,
     val publisher: String,
     val description: String,
-    val coverImage: String?,
+    val coverImage: String? = null,
     val issueNumber: Int,
     val publicationDate: LocalDateTime,
     val articles: List<String> = emptyList(),
-    val isFavorite: Boolean = false,
-    val category: String
+    val category: String,
+    var isFavorite: Boolean = false
 )

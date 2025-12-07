@@ -7,7 +7,6 @@ import org.springframework.stereotype.Repository
 
 @Repository
 interface ArticleRepository : MongoRepository<Article, String> {
-
     fun findByTitleContainingIgnoreCase(title: String): List<Article>
     fun findByAuthorContainingIgnoreCase(author: String): List<Article>
     fun findByCategory(category: String): List<Article>
@@ -15,7 +14,8 @@ interface ArticleRepository : MongoRepository<Article, String> {
 
     @Query("{ \$or: [ " +
             "{ 'title': { \$regex: ?0, \$options: 'i' } }, " +
-            "{ 'author': { \$regex: ?0, \$options: 'i' } } " +
+            "{ 'author': { \$regex: ?0, \$options: 'i' } }, " +
+            "{ 'content': { \$regex: ?0, \$options: 'i' } } " +
             "] }")
     fun searchArticles(query: String): List<Article>
 }

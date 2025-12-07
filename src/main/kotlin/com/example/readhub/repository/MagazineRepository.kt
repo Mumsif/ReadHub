@@ -7,7 +7,6 @@ import org.springframework.stereotype.Repository
 
 @Repository
 interface MagazineRepository : MongoRepository<Magazine, String> {
-
     fun findByTitleContainingIgnoreCase(title: String): List<Magazine>
     fun findByPublisherContainingIgnoreCase(publisher: String): List<Magazine>
     fun findByCategory(category: String): List<Magazine>

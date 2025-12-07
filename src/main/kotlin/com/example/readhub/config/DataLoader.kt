@@ -17,13 +17,35 @@ class DataLoader(
     override fun run(args: Array<String>) {
         println("🔄 DataLoader started...")
 
-        // Clear existing data
-        articleRepository.deleteAll()
-        magazineRepository.deleteAll()
-        println("✅ Data cleared")
+        try {
+            if (articleRepository.count() == 0L) {
+                println("📄 Database is empty, loading demo articles...")
+                val demoArticles = getDemoArticles()
+                articleRepository.saveAll(demoArticles)
+                println("✅ Loaded ${demoArticles.size} demo articles")
+            } else {
+                println("✅ Database already has articles, skipping")
+            }
 
-        // Sample articles
-        val articles = listOf(
+            if (magazineRepository.count() == 0L) {
+                println("📄 Loading demo magazines...")
+                val demoMagazines = getDemoMagazines()
+                magazineRepository.saveAll(demoMagazines)
+                println("✅ Loaded ${demoMagazines.size} demo magazines")
+            } else {
+                println("✅ Database already has magazines, skipping")
+            }
+
+        } catch (e: Exception) {
+            println("❌ Error in DataLoader: ${e.message}")
+            e.printStackTrace()
+        }
+
+        println("🎉 DataLoader completed!")
+    }
+
+    private fun getDemoArticles(): List<Article> {
+        return listOf(
             Article(
                 title = "Getting Started with Spring Boot",
                 content = "Spring Boot makes it easy to create stand-alone Spring applications...",
@@ -34,7 +56,8 @@ class DataLoader(
                 urlToImage = "https://picsum.photos/400/200?random=1",
                 publishedAt = LocalDateTime.now().minusDays(1),
                 category = "Technology",
-                tags = listOf("spring", "java", "tutorial")
+                tags = listOf("spring", "java", "tutorial"),
+                isFavorite = false
             ),
             Article(
                 title = "The Future of AI in Development",
@@ -46,15 +69,14 @@ class DataLoader(
                 urlToImage = "https://picsum.photos/400/200?random=2",
                 publishedAt = LocalDateTime.now().minusHours(5),
                 category = "Artificial Intelligence",
-                tags = listOf("ai", "development", "future")
+                tags = listOf("ai", "development", "future"),
+                isFavorite = false
             )
         )
+    }
 
-        val savedArticles = articleRepository.saveAll(articles)
-        println("✅ Loaded ${savedArticles.size} articles")
-
-        // Sample magazines
-        val magazines = listOf(
+    private fun getDemoMagazines(): List<Magazine> {
+        return listOf(
             Magazine(
                 title = "Developer Weekly",
                 publisher = "Code Publications",
@@ -62,14 +84,8 @@ class DataLoader(
                 coverImage = "https://picsum.photos/300/400?random=3",
                 issueNumber = 15,
                 publicationDate = LocalDateTime.now().minusDays(10),
-                articles = savedArticles.map { it.id!! },
                 category = "Programming"
             )
         )
-
-        magazineRepository.saveAll(magazines)
-        println("✅ Loaded ${magazines.size} magazines")
-
-        println("🎉 DataLoader completed successfully!")
     }
 }

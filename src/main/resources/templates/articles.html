@@ -8,139 +8,17 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📚</text></svg>">
 
-    <!-- PWA Features -->
-    <meta name="theme-color" content="#0d6efd">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-
     <style>
-        /* Mobile-First Responsive Design */
-        @media (max-width: 768px) {
-            .container {
-                padding-left: 15px;
-                padding-right: 15px;
-            }
-
-            /* Better touch targets for mobile */
-            .btn, .card, .nav-link {
-                min-height: 44px;
-                display: flex;
-                align-items: center;
-            }
-
-            /* Adjust font sizes for mobile */
-            h1 { font-size: 1.8rem; }
-            h2 { font-size: 1.5rem; }
-            h3 { font-size: 1.3rem; }
-
-            /* Stack cards vertically on mobile */
-            .card-deck .card {
-                margin-bottom: 1rem;
-            }
-
-            /* Improve navbar for mobile */
-            .navbar-nav {
-                text-align: center;
-            }
-
-            /* Better spacing for mobile */
-            .mobile-spacing {
-                margin-bottom: 1rem;
-            }
-
-            /* Adjust images for mobile */
-            .card-img-top {
-                height: 200px;
-                object-fit: cover;
-            }
-
-            /* Improve form elements */
-            input, select, textarea {
-                font-size: 16px; /* Prevents zoom on iOS */
-            }
-
-            /* Mobile-optimized article layout */
-            .article-content {
-                font-size: 1rem;
-                line-height: 1.6;
-            }
-
-            /* Better article cards on mobile */
-            .card-body {
-                padding: 1rem;
-            }
-        }
-
-        /* Extra small devices */
-        @media (max-width: 576px) {
-            .container {
-                padding-left: 10px;
-                padding-right: 10px;
-            }
-
-            .btn {
-                padding: 0.75rem 1rem;
-                font-size: 1rem;
-            }
-
-            .card-body {
-                padding: 0.75rem;
-            }
-
-            h1 { font-size: 1.5rem; }
-        }
-
-        /* Common mobile improvements */
-        .mobile-optimized {
-            -webkit-tap-highlight-color: transparent; /* Remove blue tap highlight on iOS */
-            touch-action: manipulation; /* Improve touch responsiveness */
-        }
-
-        /* Prevent horizontal scroll */
-        body {
-            overflow-x: hidden;
-            max-width: 100%;
-        }
-
-        /* Your existing article styles */
         .article-content {
             white-space: pre-line;
             line-height: 1.6;
         }
-
-        .read-more {
-            color: #0d6efd;
-            text-decoration: none;
-        }
-
-        .read-more:hover {
-            text-decoration: underline;
-        }
-
-        /* Improve readability on mobile */
-        .article-content {
-            font-size: 1rem;
-            line-height: 1.7;
-        }
-
-        /* Mobile-friendly images */
-        img {
-            max-width: 100%;
-            height: auto;
-        }
-
-        /* Better article cards for mobile */
-        .card {
-            margin-bottom: 1rem;
-            border: 1px solid #e0e0e0;
-        }
-
-        /* Mobile-optimized buttons */
-        .btn {
-            min-height: 44px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
+        @media (max-width: 768px) {
+            .container { padding-left: 15px; padding-right: 15px; }
+            .btn, .card, .nav-link { min-height: 44px; display: flex; align-items: center; }
+            h1 { font-size: 1.8rem; }
+            .card-img-top { height: 200px; object-fit: cover; }
+            input, select, textarea { font-size: 16px; }
         }
     </style>
 </head>
@@ -148,9 +26,13 @@
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <div class="container">
         <a class="navbar-brand" href="/">
-            <i class="fas fa-book-reader me-2"></i>
-            ReadHub
+            <i class="fas fa-book-reader me-2"></i>ReadHub
         </a>
+        <div class="navbar-nav ms-auto">
+            <a class="nav-link" href="/">Home</a>
+            <a class="nav-link" href="/magazines">Magazines</a>
+            <a class="nav-link" href="/favorites">Favorites</a>
+        </div>
     </div>
 </nav>
 
@@ -164,72 +46,39 @@
         </form>
     </div>
 
-    <!-- Debug info (remove in production) -->
-    <div class="alert alert-info" th:if="${articles}">
-        Showing <span th:text="${articles.size()}"></span> articles
-    </div>
-
     <div th:if="${#lists.isEmpty(articles)}" class="alert alert-warning">
         <p>No articles found.</p>
     </div>
 
     <div th:each="article : ${articles}" class="card mb-4">
         <div class="card-body">
-            <h3 class="card-title" th:text="${article.title}">Article Title</h3>
+            <h3 class="card-title" th:text="${article.title}"></h3>
 
-            <!-- Article Image -->
-            <img th:if="${article.urlToImage}"
-                 th:src="${article.urlToImage}"
-                 class="img-fluid rounded mb-3"
-                 alt="Article image"
-                 style="max-height: 300px; object-fit: cover;">
+            <img th:if="${article.urlToImage}" th:src="${article.urlToImage}"
+                 class="img-fluid rounded mb-3" alt="Article image" style="max-height: 300px; object-fit: cover;">
 
-            <p class="card-text text-muted" th:text="${article.description}">Article description</p>
-
-            <!-- FULL ARTICLE CONTENT (This was missing!) -->
-            <div class="article-content mt-3 mb-3" th:text="${article.content}">
-                Article content will appear here...
-            </div>
+            <p class="card-text text-muted" th:text="${article.description}"></p>
+            <div class="article-content mt-3 mb-3" th:text="${article.content}"></div>
 
             <div class="article-meta mb-3">
-                <p class="text-muted mb-1">
-                    <strong>Author:</strong> <span th:text="${article.author}">Unknown Author</span>
-                </p>
-                <p class="text-muted mb-1">
-                    <strong>Source:</strong> <span th:text="${article.source}">Unknown Source</span>
-                </p>
-                <p class="text-muted mb-1">
-                    <strong>Published:</strong>
-                    <span th:text="${#temporals.format(article.publishedAt, 'yyyy-MM-dd HH:mm')}">
-                        Publication date
-                    </span>
-                </p>
-                <p class="text-muted">
-                    <strong>Category:</strong> <span th:text="${article.category}">General</span>
-                </p>
+                <p class="text-muted mb-1"><strong>Author:</strong> <span th:text="${article.author}"></span></p>
+                <p class="text-muted mb-1"><strong>Source:</strong> <span th:text="${article.source}"></span></p>
+                <p class="text-muted mb-1"><strong>Published:</strong> <span th:text="${#temporals.format(article.publishedAt, 'yyyy-MM-dd HH:mm')}"></span></p>
+                <p class="text-muted"><strong>Category:</strong> <span th:text="${article.category}"></span></p>
             </div>
 
-            <!-- Tags -->
             <div th:if="${not #lists.isEmpty(article.tags)}" class="mb-3">
                 <strong>Tags:</strong>
                 <span th:each="tag : ${article.tags}" class="badge bg-secondary me-1" th:text="${tag}"></span>
             </div>
 
-            <!-- Actions -->
             <div class="d-flex gap-2">
-                <!-- Read Full Article Link -->
-                <a th:href="${article.url}"
-                   target="_blank"
-                   class="btn btn-outline-primary">
-                    <i class="fas fa-external-link-alt me-1"></i>
-                    Read Full Article
+                <a th:href="${article.url}" target="_blank" class="btn btn-outline-primary">
+                    <i class="fas fa-external-link-alt me-1"></i>Read Full Article
                 </a>
-
-                <!-- Favorite Button -->
                 <form th:action="@{/articles/{id}/favorite(id=${article.id})}" method="post" class="d-inline">
                     <button type="submit" class="btn btn-outline-danger">
-                        <i class="far fa-heart me-1"></i>
-                        Favorite
+                        <i class="far fa-heart me-1"></i>Favorite
                     </button>
                 </form>
             </div>
